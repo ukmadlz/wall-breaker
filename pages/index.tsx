@@ -8,29 +8,58 @@ import styles from '../styles/Home.module.css'
 
 const TWITCH_CHANNEL = 'ukmadlz';
 const DEBUG = true;
-const TEAM_TIMER = 60;
-
+const TEAM_TIMER = 30;
+const GAME_TIMER = 30;
 class Home extends React.Component {
   constructor(props: any) {
     super(props);
     this.state = {
       chatters: [],
       raidOn: false,
+      gameOn: false,
       teamTimer: new Date(),
       chatRaiders: [],
       chatDefenders: [],
+      numberOfBlocks: 0,
+      numberOfRaiders: 0,
     };
   }
 
   componentDidMount() {
 
-    const startRaidGame = () => {
+    const startRaidGame = (username, viewers) => {
       const t = new Date();
       t.setSeconds(t.getSeconds() + TEAM_TIMER);
+      setTimeout(()=> {
+        const numberOfBlocks = (this.state.chatDefenders.length <= this.state.chatRaiders.length) ?
+          this.state.chatDefenders.length :
+          this.state.chatRaiders.length;
+        this.setState({
+          gameOn: true,
+          numberOfBlocks: DEBUG ? 5 : Math.ceil(numberOfBlocks * 1.25),
+        })
+        setTimeout(endRaidGame, GAME_TIMER * 1000);
+      }, TEAM_TIMER * 1001);
       this.setState({
         raidOn: true,
         teamTimer: t,
+        numberOfRaiders: viewers,
+        chatRaiders: [username],
       });
+    }
+
+    const endRaidGame = () => {
+      if(this.state.numberOfBlocks > 0) {
+        alert('Defenders Win')
+      } else {
+        alert('Raiders Win')
+      }
+      this.setState({
+        raidOn: false,
+        gameOn: false,
+        chatRaiders: [],
+        chatDefenders: [],
+      })
     }
 
     // Get the initial people known to be in chat on loading
@@ -76,7 +105,7 @@ class Home extends React.Component {
 
       // Trigger raid for testing purposes
       if(message === '!testraid' && DEBUG) {
-        startRaidGame();
+        startRaidGame(TWITCH_CHANNEL, 5);
       }
 
       // Check for raid game commands
@@ -92,7 +121,8 @@ class Home extends React.Component {
               // Join defending team if already in chat
               if(this.state.chatters.includes(username) &&
                 !this.state.chatDefenders.includes(username) &&
-                !this.state.chatRaiders.includes(username)) {
+                !this.state.chatRaiders.includes(username) &&
+                !this.state.chatDefenders.length <= this.state.numberOfRaiders) {
                   this.setState({
                     chatDefenders: [...this.state.chatDefenders, username],
                   });
@@ -108,6 +138,17 @@ class Home extends React.Component {
             break;
           // Fire at wall
           case 'fire':
+            if(this.state.gameOn) {
+              if(this.state.chatRaiders.includes(username)) {
+                this.setState({
+                  numberOfBlocks: this.state.numberOfBlocks - 1,
+                });
+              } else if(this.state.chatDefenders.includes(username)) {
+                this.setState({
+                  numberOfBlocks: this.state.numberOfBlocks + 1,
+                });
+              }
+            }
             break;
         }
 
@@ -121,14 +162,14 @@ class Home extends React.Component {
     });
     // Start the game
     client.on('raided', (channel: string, username: string, viewers: number) => {
-      startRaidGame();
+      startRaidGame(username, viewers);
     })
   }
 
   render() {
     return (
       <div className={styles.container}>
-        {this.state.raidOn ? 'Raid has happened' : 'No raid'}
+        <h1>{this.state.raidOn ? 'Raid has happened' : 'No raid'}</h1>
       </div>
     );
   }
