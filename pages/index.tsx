@@ -7,31 +7,44 @@ import Axios from 'axios';
 import styles from '../styles/Home.module.css'
 
 const TWITCH_CHANNEL = 'ukmadlz';
+const DEBUG = true;
+const TEAM_TIMER = 60;
 
 class Home extends React.Component {
   constructor(props: any) {
     super(props);
     this.state = {
       chatters: [],
-      raidOn: true,
+      raidOn: false,
+      teamTimer: new Date(),
       chatRaiders: [],
       chatDefenders: [],
     };
   }
 
   componentDidMount() {
+
+    const startRaidGame = () => {
+      const t = new Date();
+      t.setSeconds(t.getSeconds() + TEAM_TIMER);
+      this.setState({
+        raidOn: true,
+        teamTimer: t,
+      });
+    }
+
+    // Get the initial people known to be in chat on loading
     Axios({
       method: 'get',
       url: `https://jwalter-chatters.builtwithdark.com/?broadcaster=${TWITCH_CHANNEL}`,
     })
-      .then((response) => {
-        const { admins, broadcaster, vips, viewers, staff, moderators } = response.data.chatters;
-        const initialChatters = [...viewers, ...vips, ...staff, ...moderators, ...broadcaster, ...admins];
-        this.setState({
-          chatters: initialChatters,
-          raidOn: this.state.raidOn
-        });
-      })
+    .then((response) => {
+      const { admins, broadcaster, vips, viewers, staff, moderators } = response.data.chatters;
+      const initialChatters = [...viewers, ...vips, ...staff, ...moderators, ...broadcaster, ...admins];
+      this.setState({
+        chatters: initialChatters
+      });
+    })
     const client = new tmi.Client({
       channels: [TWITCH_CHANNEL],
       skipUpdatingEmotesets: false,
@@ -42,8 +55,7 @@ class Home extends React.Component {
       console.log('join');
       if (!this.state.chatters.includes(username) && !username.startsWith('justinfan')) {
         this.setState({
-          chatters: [...this.state.chatters, username],
-          raidOn: this.state.raidOn,
+          chatters: [...this.state.chatters, username]
         });
       }
     });
@@ -51,8 +63,7 @@ class Home extends React.Component {
       console.log('part');
       if (this.state.chatters.includes(username)) {
         this.setState({
-          chatters: this.state.chatters.filter((chatter: string) => chatter !== username),
-          raidOn: this.state.raidOn,
+          chatters: this.state.chatters.filter((chatter: string) => chatter !== username)
         });
       }
     });
@@ -60,6 +71,14 @@ class Home extends React.Component {
     client.on('message', (channel: any, tags: any, message: any, self: any) => {
       console.log('message');
       console.log({ channel, tags, message, self });
+
+      const { username } = tags;
+
+      // Trigger raid for testing purposes
+      if(message === '!testraid' && DEBUG) {
+        startRaidGame();
+      }
+
       // Check for raid game commands
       if(this.state.raidOn) {
         const args = message.slice(1).split(' ');
@@ -69,7 +88,23 @@ class Home extends React.Component {
         switch(command) {
           // Decide Teams
           case 'raid':
-            
+            if(this.state.teamTimer > new Date()) {
+              // Join defending team if already in chat
+              if(this.state.chatters.includes(username) &&
+                !this.state.chatDefenders.includes(username) &&
+                !this.state.chatRaiders.includes(username)) {
+                  this.setState({
+                    chatDefenders: [...this.state.chatDefenders, username],
+                  });
+              // Join raiders if new to chat!
+              } else if(!this.state.chatters.includes(username) &&
+                !this.state.chatRaiders.includes(username) &&
+                !this.state.chatRaiders.length <= this.state.chatters.length) {
+                  this.setState({
+                    chatRaiders: [...this.state.chatRaiders, username],
+                  });
+              }
+            }
             break;
           // Fire at wall
           case 'fire':
@@ -81,16 +116,12 @@ class Home extends React.Component {
       if (!this.state.chatters.includes(tags.username)) {
         this.setState({
           chatters: [...this.state.chatters, tags.username],
-          raidOn: this.state.raidOn,
         });
       }
     });
     // Start the game
     client.on('raided', (channel: string, username: string, viewers: number) => {
-      this.setState({
-        chatters: [...this.state.chatters, username],
-        raidOn: true,
-      });
+      startRaidGame();
     })
   }
 
