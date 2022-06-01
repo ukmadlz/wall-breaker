@@ -1,0 +1,15 @@
+.players {
+    width: 40%;
+    float: left;
+}
+.wall {
+    width: 20%;
+    float: left;
+}
+.brick {
+    display: block;
+    height: 20px;
+    background: #BC4A3C;
+    border: 2px solid #ffffff;
+    margin: 0 20px;
+}
