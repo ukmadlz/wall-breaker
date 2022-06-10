@@ -18,6 +18,7 @@ interface GameOverlayState {
   raidOn: Boolean,
   gameOn: Boolean,
   teamTimer: Date,
+  gameTimer: Date,
   chatRaiders: string[],
   chatDefenders: string[],
   numberOfBlocks: number,
@@ -35,6 +36,7 @@ class GameOverlay extends React.Component<GameOverlayProps, GameOverlayState> {
       raidOn: false,
       gameOn: false,
       teamTimer: new Date(),
+      gameTimer: new Date(),
       chatRaiders: [],
       chatDefenders: [],
       numberOfBlocks: 0,
@@ -54,8 +56,10 @@ class GameOverlay extends React.Component<GameOverlayProps, GameOverlayState> {
 
     let gameTimeout: any;
     const startRaidGame = (username: string, viewers: number, chatTriggered: boolean) => {
-      const t = new Date();
-      t.setSeconds(t.getSeconds() + TEAM_TIMER);
+      const tt = new Date();
+      tt.setSeconds(tt.getSeconds() + TEAM_TIMER);
+      const gt = new Date();
+      gt.setSeconds(gt.getSeconds() + GAME_TIMER);
       setTimeout(() => {
         const numberOfBlocks = (this.state.chatDefenders.length <= this.state.chatRaiders.length) ?
           this.state.chatDefenders.length :
@@ -68,7 +72,8 @@ class GameOverlay extends React.Component<GameOverlayProps, GameOverlayState> {
       }, TEAM_TIMER * 1001);
       this.setState({
         raidOn: true,
-        teamTimer: t,
+        teamTimer: tt,
+        gameTimer: gt,
         numberOfRaiders: viewers,
         chatRaiders: [username],
         chatTriggered,
@@ -154,7 +159,7 @@ class GameOverlay extends React.Component<GameOverlayProps, GameOverlayState> {
         switch (command) {
           // Decide Teams
           case 'join':
-            if (this.state.teamTimer > new Date()) {
+            if (this.state.gameTimer > new Date()) {
               if(this.state.chatTriggered) {
                 if (!this.state.chatRaiders.includes(username) &&
                   !this.state.chatDefenders.includes(username)) {
