@@ -2,7 +2,7 @@ import React from 'react';
 
 function Selection(props: any): JSX.Element {
     return <div>
-    <h1>!join to join the game</h1>
+    <h1>!join / !defender / !raider to join the game</h1>
     <div>
       <div>
         <h2>Raiders</h2>

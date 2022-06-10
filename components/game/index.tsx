@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from '../../styles/Game.module.css';
 
-function Game(props): JSX.Element {
+function Game(props: any): JSX.Element {
   return <div>
         <h1>!fire to attack/defend the wall</h1>
         <div>
