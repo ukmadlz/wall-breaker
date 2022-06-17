@@ -117,7 +117,6 @@ class GameOverlay extends React.Component<GameOverlayProps, GameOverlayState> {
 
     const client = new tmi.Client({
       channels: [this.props.host],
-      skipUpdatingEmotesets: false,
     });
     client.connect();
     // Build the current chatters list
@@ -221,7 +220,7 @@ class GameOverlay extends React.Component<GameOverlayProps, GameOverlayState> {
     });
     // Start the game
     client.on('raided', (channel: string, username: string, viewers: number) => {
-      startRaidGame(username, viewers);
+      startRaidGame(username, viewers, false);
     })
   }
 
